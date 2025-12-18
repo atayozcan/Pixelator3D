@@ -10,7 +10,6 @@ import java.awt.*;
 public class ControlPanel {
     private final JPanel panel;
     private final JSlider pixelSizeSlider;
-    private final JLabel pixelSizeLabel;
     private final JComboBox<Integer> colorCountCombo;
     private final JCheckBox mode3DCheck;
     private final JComboBox<OutputSize> outputSizeCombo;
@@ -20,10 +19,8 @@ public class ControlPanel {
     public ControlPanel(Runnable onLoad, Runnable onApply, Runnable onGeneratePDF) {
         panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(UIConfig.padding(10, 15));
-
         // Row 1: Load + Pixel Size Slider
-        var row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
+        var row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         row1.add(UIConfig.button("Load Image", onLoad));
 
         row1.add(new JLabel("Pixel Size:"));
@@ -31,8 +28,9 @@ public class ControlPanel {
         pixelSizeSlider.setPaintTrack(true);
         pixelSizeSlider.setPaintTicks(false);
         pixelSizeSlider.setPaintLabels(false);
+        pixelSizeSlider.putClientProperty("Slider.paintValue", Boolean.FALSE);
         pixelSizeSlider.setPreferredSize(new Dimension(120, 20));
-        pixelSizeLabel = new JLabel("10");
+        var pixelSizeLabel = new JLabel("10");
         pixelSizeLabel.setFont(UIConfig.FONT_BOLD);
         pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
         row1.add(pixelSizeSlider);
@@ -68,7 +66,9 @@ public class ControlPanel {
         panel.add(row2);
     }
 
-    public JPanel getPanel() { return panel; }
+    public JPanel getPanel() {
+        return panel;
+    }
 
     public void setButtonsEnabled(boolean enabled) {
         applyButton.setEnabled(enabled);
@@ -81,9 +81,4 @@ public class ControlPanel {
         config.setMode3D(mode3DCheck.isSelected());
         config.setOutputSize((OutputSize) outputSizeCombo.getSelectedItem());
     }
-
-    public int getPixelSize() { return pixelSizeSlider.getValue(); }
-    public int getColorCount() { return (Integer) colorCountCombo.getSelectedItem(); }
-    public boolean isMode3D() { return mode3DCheck.isSelected(); }
-    public OutputSize getOutputSize() { return (OutputSize) outputSizeCombo.getSelectedItem(); }
 }

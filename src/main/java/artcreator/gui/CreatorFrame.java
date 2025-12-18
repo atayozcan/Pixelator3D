@@ -14,6 +14,7 @@ import artcreator.statemachine.port.Subject;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
+import java.lang.foreign.PaddingLayout;
 import java.util.TooManyListenersException;
 
 public class CreatorFrame extends JFrame implements Observer {
