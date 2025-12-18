@@ -3,304 +3,241 @@ package artcreator.creator.impl;
 import artcreator.domain.ArtworkConfig;
 import artcreator.domain.OutputSize;
 import artcreator.domain.Template;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
 
 public class PDFGenerator {
     private static final float MM_TO_POINTS = 72f / 25.4f;
+    private static final float PAGE_WIDTH = 595.28f;  // A4 width in points
+    private static final float PAGE_HEIGHT = 841.89f; // A4 height in points
     private static final float MARGIN = 20 * MM_TO_POINTS;
 
     public void generate(Template template, File outputFile) throws IOException {
         var config = template.getConfig();
         var image = template.getDisplayImage();
+        var palette = ColorQuantizer.getPalette(image, config.getColorCount());
 
-        try (var doc = new PDDocument()) {
+        try (var out = new FileOutputStream(outputFile)) {
+            var writer = new PDFWriter(out);
+
             // Title page
-            addTitlePage(doc, image, config);
+            writeTitlePage(writer, config);
 
             // Instructions page with legend
-            addInstructionsPage(doc, image, config);
+            writeInstructionsPage(writer, image, config, palette);
 
-            // Grid pages (with tiling if needed)
-            addGridPages(doc, image, config);
+            // Grid pages
+            writeGridPages(writer, image, config, palette);
 
-            doc.save(outputFile);
+            writer.finish();
         }
     }
 
-    private void addTitlePage(PDDocument doc, BufferedImage image, ArtworkConfig config) throws IOException {
-        var page = new PDPage(PDRectangle.A4);
-        doc.addPage(page);
+    private void writeTitlePage(PDFWriter writer, ArtworkConfig config) throws IOException {
+        var content = new StringBuilder();
+        var y = PAGE_HEIGHT - MARGIN;
 
-        try (var cs = new PDPageContentStream(doc, page)) {
-            var fontBold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-            var font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        // Title
+        content.append("BT\n");
+        content.append("/F1 24 Tf\n");
+        content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, y - 24));
+        content.append("(Pixelator3D - Bauanleitung) Tj\n");
+        content.append("ET\n");
 
-            // Title
-            cs.beginText();
-            cs.setFont(fontBold, 24);
-            cs.newLineAtOffset(MARGIN, page.getMediaBox().getHeight() - MARGIN - 24);
-            cs.showText("Pixelator3D - Bauanleitung");
-            cs.endText();
+        // Config info
+        y -= 60;
+        content.append("BT\n");
+        content.append("/F1 12 Tf\n");
+        content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, y));
+        content.append("(Pixelgroesse: " + config.getPixelSize() + ") Tj\n");
+        content.append("0 -18 Td\n");
+        content.append("(Farben: " + config.getColorCount() + ") Tj\n");
+        content.append("0 -18 Td\n");
+        content.append("(Modus: " + (config.isMode3D() ? "3D" : "2D") + ") Tj\n");
+        content.append("0 -18 Td\n");
+        content.append("(Ausgabe: " + config.getOutputSize() + ") Tj\n");
+        content.append("ET\n");
 
-            // Config info
-            cs.beginText();
-            cs.setFont(font, 12);
-            cs.newLineAtOffset(MARGIN, page.getMediaBox().getHeight() - MARGIN - 60);
-            cs.showText("Raster: " + config.getGridWidth() + " x " + config.getGridHeight());
-            cs.newLineAtOffset(0, -18);
-            cs.showText("Farben: " + config.getColorCount());
-            cs.newLineAtOffset(0, -18);
-            cs.showText("Modus: " + (config.isMode3D() ? "3D" : "2D"));
-            cs.newLineAtOffset(0, -18);
-            cs.showText("Ausgabe: " + config.getOutputSize());
-            cs.endText();
-
-            // Preview image
-            var previewWidth = 400f;
-            var previewHeight = previewWidth * image.getHeight() / image.getWidth();
-            var pdImage = LosslessFactory.createFromImage(doc, image);
-            cs.drawImage(pdImage, MARGIN, page.getMediaBox().getHeight() - MARGIN - 150 - previewHeight,
-                    previewWidth, previewHeight);
-        }
+        writer.addPage(content.toString());
     }
 
-    private void addInstructionsPage(PDDocument doc, BufferedImage image, ArtworkConfig config) throws IOException {
-        var page = new PDPage(PDRectangle.A4);
-        doc.addPage(page);
+    private void writeInstructionsPage(PDFWriter writer, BufferedImage image, ArtworkConfig config,
+                                       List<Color> palette) throws IOException {
+        var colorCounts = countColors(image, palette, config.getPixelSize());
+        var content = new StringBuilder();
+        var y = PAGE_HEIGHT - MARGIN;
 
-        var palette = ColorQuantizer.getPalette(image, config.getColorCount());
-        var colorCounts = countColors(image, palette);
+        // Title
+        content.append("BT\n");
+        content.append("/F1 18 Tf\n");
+        content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, y - 18));
+        content.append("(Materialliste & Legende) Tj\n");
+        content.append("ET\n");
+        y -= 50;
 
-        try (var cs = new PDPageContentStream(doc, page)) {
-            var fontBold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-            var font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        // Legend table
+        var colorIndex = 0;
+        for (var entry : colorCounts.entrySet()) {
+            var color = entry.getKey();
+            var count = entry.getValue();
+            var code = getColorCode(colorIndex);
 
-            float y = page.getMediaBox().getHeight() - MARGIN;
+            // Color swatch
+            content.append(String.format(Locale.US, "%.3f %.3f %.3f rg\n",
+                    color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f));
+            content.append(String.format(Locale.US, "%.2f %.2f 20 15 re f\n", MARGIN, y - 15));
 
-            // Title
-            cs.beginText();
-            cs.setFont(fontBold, 18);
-            cs.newLineAtOffset(MARGIN, y - 18);
-            cs.showText("Materialliste & Legende");
-            cs.endText();
-            y -= 50;
+            // Border
+            content.append("0 0 0 RG\n");
+            content.append(String.format(Locale.US, "%.2f %.2f 20 15 re S\n", MARGIN, y - 15));
 
-            // Legend table
-            var colorIndex = 0;
-            for (var entry : colorCounts.entrySet()) {
-                var color = entry.getKey();
-                var count = entry.getValue();
-                var code = getColorCode(colorIndex);
+            // Text
+            content.append("BT\n");
+            content.append("0 0 0 rg\n");
+            content.append("/F1 11 Tf\n");
+            content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN + 30, y - 12));
+            content.append("(" + code + " = RGB\\(" + color.getRed() + "," + color.getGreen() + "," +
+                    color.getBlue() + "\\) - " + count + " Stueck) Tj\n");
+            content.append("ET\n");
 
-                // Color swatch
-                cs.setNonStrokingColor(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f);
-                cs.addRect(MARGIN, y - 15, 20, 15);
-                cs.fill();
-
-                // Border
-                cs.setStrokingColor(0, 0, 0);
-                cs.addRect(MARGIN, y - 15, 20, 15);
-                cs.stroke();
-
-                // Text
-                cs.beginText();
-                cs.setFont(font, 11);
-                cs.setNonStrokingColor(0, 0, 0);
-                cs.newLineAtOffset(MARGIN + 30, y - 12);
-                cs.showText(code + " = RGB(" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() +
-                        ") - " + count + " Stück");
-                cs.endText();
-
-                y -= 22;
-                colorIndex++;
-
-                if (y < MARGIN + 50) break; // Prevent overflow
-            }
-
-            // Instructions
-            y -= 30;
-            cs.beginText();
-            cs.setFont(fontBold, 14);
-            cs.newLineAtOffset(MARGIN, y);
-            cs.showText("Anleitung:");
-            cs.endText();
-
-            y -= 25;
-            cs.beginText();
-            cs.setFont(font, 11);
-            cs.newLineAtOffset(MARGIN, y);
-            cs.showText("1. Verwende das Raster auf den folgenden Seiten als Vorlage.");
-            cs.newLineAtOffset(0, -16);
-            cs.showText("2. Jede Zelle zeigt den Farbcode (z.B. A, B, C...).");
-            cs.newLineAtOffset(0, -16);
-            cs.showText("3. Lege die entsprechenden Materialien nach der Legende.");
-            cs.endText();
+            y -= 22;
+            colorIndex++;
+            if (y < MARGIN + 100) break;
         }
+
+        // Instructions
+        y -= 30;
+        content.append("BT\n");
+        content.append("/F1 14 Tf\n");
+        content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, y));
+        content.append("(Anleitung:) Tj\n");
+        content.append("ET\n");
+
+        y -= 25;
+        content.append("BT\n");
+        content.append("/F1 11 Tf\n");
+        content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, y));
+        content.append("(1. Verwende das Raster auf den folgenden Seiten als Vorlage.) Tj\n");
+        content.append("0 -16 Td\n");
+        content.append("(2. Jede Zelle zeigt den Farbcode \\(z.B. A, B, C...\\).) Tj\n");
+        content.append("0 -16 Td\n");
+        content.append("(3. Lege die entsprechenden Materialien nach der Legende.) Tj\n");
+        content.append("ET\n");
+
+        writer.addPage(content.toString());
     }
 
-    private void addGridPages(PDDocument doc, BufferedImage image, ArtworkConfig config) throws IOException {
+    private void writeGridPages(PDFWriter writer, BufferedImage image, ArtworkConfig config,
+                                List<Color> palette) throws IOException {
         var outputSize = config.getOutputSize();
-        var gridW = config.getGridWidth();
-        var gridH = config.getGridHeight();
-
-        var palette = ColorQuantizer.getPalette(image, config.getColorCount());
+        var pixelSize = config.getPixelSize();
+        var gridW = image.getWidth() / pixelSize;
+        var gridH = image.getHeight() / pixelSize;
 
         if (outputSize == OutputSize.A4) {
-            addSingleGridPage(doc, image, config, palette, gridW, gridH, 1, 1);
+            writeSingleGridPage(writer, image, config, palette, gridW, gridH, 0, 0, gridW, gridH, 1, 1);
         } else {
-            // Calculate tiling
             var tilesX = (int) Math.ceil(outputSize.getWidthMM() / (double) OutputSize.A4.getWidthMM());
             var tilesY = (int) Math.ceil(outputSize.getHeightMM() / (double) OutputSize.A4.getHeightMM());
-
             var cellsPerTileX = (int) Math.ceil(gridW / (double) tilesX);
             var cellsPerTileY = (int) Math.ceil(gridH / (double) tilesY);
-
             var totalPages = tilesX * tilesY;
             var pageNum = 1;
 
             for (var ty = 0; ty < tilesY; ty++) {
                 for (var tx = 0; tx < tilesX; tx++) {
-                    addTiledGridPage(doc, image, config, palette,
+                    writeSingleGridPage(writer, image, config, palette, gridW, gridH,
                             tx * cellsPerTileX, ty * cellsPerTileY,
-                            cellsPerTileX, cellsPerTileY,
-                            pageNum, totalPages);
+                            cellsPerTileX, cellsPerTileY, pageNum, totalPages);
                     pageNum++;
                 }
             }
         }
     }
 
-    private void addSingleGridPage(PDDocument doc, BufferedImage image, ArtworkConfig config,
-                                   List<Color> palette, int gridW, int gridH,
-                                   int pageNum, int totalPages) throws IOException {
-        var page = new PDPage(PDRectangle.A4);
-        doc.addPage(page);
+    private void writeSingleGridPage(PDFWriter writer, BufferedImage image, ArtworkConfig config,
+                                     List<Color> palette, int gridW, int gridH,
+                                     int startCellX, int startCellY, int cellsW, int cellsH,
+                                     int pageNum, int totalPages) throws IOException {
+        var content = new StringBuilder();
+        var pageWidth = PAGE_WIDTH - 2 * MARGIN;
+        var pageHeight = PAGE_HEIGHT - 2 * MARGIN - 30;
+        var pixelSize = config.getPixelSize();
 
-        var pageWidth = page.getMediaBox().getWidth() - 2 * MARGIN;
-        var pageHeight = page.getMediaBox().getHeight() - 2 * MARGIN - 30;
+        var actualCellsW = Math.min(cellsW, gridW - startCellX);
+        var actualCellsH = Math.min(cellsH, gridH - startCellY);
 
-        var cellSize = Math.min(pageWidth / gridW, pageHeight / gridH);
-        var gridWidthPx = cellSize * gridW;
-        var gridHeightPx = cellSize * gridH;
+        var cellSize = Math.min(pageWidth / actualCellsW, pageHeight / actualCellsH);
+        var gridWidthPx = cellSize * actualCellsW;
         var startX = MARGIN + (pageWidth - gridWidthPx) / 2;
-        var startY = page.getMediaBox().getHeight() - MARGIN - 30;
+        var startY = PAGE_HEIGHT - MARGIN - 30;
 
-        try (var cs = new PDPageContentStream(doc, page)) {
-            var font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        // Page header
+        content.append("BT\n");
+        content.append("/F1 10 Tf\n");
+        content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, PAGE_HEIGHT - MARGIN));
+        content.append("(Rastervorlage - Seite " + pageNum + "/" + totalPages + ") Tj\n");
+        content.append("ET\n");
 
-            // Page header
-            cs.beginText();
-            cs.setFont(font, 10);
-            cs.newLineAtOffset(MARGIN, page.getMediaBox().getHeight() - MARGIN);
-            cs.showText("Rastervorlage - Seite " + pageNum + "/" + totalPages);
-            cs.endText();
+        // Draw grid
+        for (var gy = 0; gy < actualCellsH; gy++) {
+            for (var gx = 0; gx < actualCellsW; gx++) {
+                var imgX = (startCellX + gx) * pixelSize + pixelSize / 2;
+                var imgY = (startCellY + gy) * pixelSize + pixelSize / 2;
 
-            // Draw grid
-            drawGrid(cs, image, config, palette, startX, startY, cellSize, 0, 0, gridW, gridH, font);
-        }
-    }
-
-    private void addTiledGridPage(PDDocument doc, BufferedImage image, ArtworkConfig config,
-                                  List<Color> palette, int startCellX, int startCellY,
-                                  int cellsW, int cellsH, int pageNum, int totalPages) throws IOException {
-        var page = new PDPage(PDRectangle.A4);
-        doc.addPage(page);
-
-        var pageWidth = page.getMediaBox().getWidth() - 2 * MARGIN;
-        var pageHeight = page.getMediaBox().getHeight() - 2 * MARGIN - 30;
-
-        var cellSize = Math.min(pageWidth / cellsW, pageHeight / cellsH);
-        var startX = MARGIN;
-        var startY = page.getMediaBox().getHeight() - MARGIN - 30;
-
-        try (var cs = new PDPageContentStream(doc, page)) {
-            var font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-
-            // Page header
-            cs.beginText();
-            cs.setFont(font, 10);
-            cs.newLineAtOffset(MARGIN, page.getMediaBox().getHeight() - MARGIN);
-            cs.showText("Rastervorlage - Seite " + pageNum + "/" + totalPages +
-                    " (Zellen " + startCellX + "-" + (startCellX + cellsW - 1) +
-                    ", " + startCellY + "-" + (startCellY + cellsH - 1) + ")");
-            cs.endText();
-
-            drawGrid(cs, image, config, palette, startX, startY, cellSize,
-                    startCellX, startCellY, cellsW, cellsH, font);
-        }
-    }
-
-    private void drawGrid(PDPageContentStream cs, BufferedImage image, ArtworkConfig config,
-                          List<Color> palette, float startX, float startY, float cellSize,
-                          int offsetX, int offsetY, int cellsW, int cellsH,
-                          PDType1Font font) throws IOException {
-        var imgW = image.getWidth();
-        var imgH = image.getHeight();
-        var gridW = config.getGridWidth();
-        var gridH = config.getGridHeight();
-        var imgCellW = imgW / gridW;
-        var imgCellH = imgH / gridH;
-
-        for (var gy = 0; gy < cellsH && (offsetY + gy) < gridH; gy++) {
-            for (var gx = 0; gx < cellsW && (offsetX + gx) < gridW; gx++) {
-                var imgX = (offsetX + gx) * imgCellW + imgCellW / 2;
-                var imgY = (offsetY + gy) * imgCellH + imgCellH / 2;
-
-                if (imgX >= imgW) imgX = imgW - 1;
-                if (imgY >= imgH) imgY = imgH - 1;
+                if (imgX >= image.getWidth()) imgX = image.getWidth() - 1;
+                if (imgY >= image.getHeight()) imgY = image.getHeight() - 1;
 
                 var pixelColor = new Color(image.getRGB(imgX, imgY));
                 var colorIndex = findNearestColorIndex(pixelColor, palette);
                 var code = getColorCode(colorIndex);
+                var c = palette.get(colorIndex);
 
                 var x = startX + gx * cellSize;
                 var y = startY - (gy + 1) * cellSize;
 
-                // Fill cell with color
-                var c = palette.get(colorIndex);
-                cs.setNonStrokingColor(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f);
-                cs.addRect(x, y, cellSize, cellSize);
-                cs.fill();
+                // Fill cell
+                content.append(String.format(Locale.US, "%.3f %.3f %.3f rg\n",
+                        c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f));
+                content.append(String.format(Locale.US, "%.2f %.2f %.2f %.2f re f\n", x, y, cellSize, cellSize));
 
-                // Draw border
-                cs.setStrokingColor(0.5f, 0.5f, 0.5f);
-                cs.addRect(x, y, cellSize, cellSize);
-                cs.stroke();
+                // Border
+                content.append("0.5 0.5 0.5 RG\n");
+                content.append(String.format(Locale.US, "%.2f %.2f %.2f %.2f re S\n", x, y, cellSize, cellSize));
 
-                // Draw code if cell is large enough
+                // Code text if cell is large enough
                 if (cellSize > 10) {
                     var brightness = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-                    cs.setNonStrokingColor(brightness > 128 ? 0 : 1, brightness > 128 ? 0 : 1, brightness > 128 ? 0 : 1);
-                    cs.beginText();
-                    cs.setFont(font, Math.min(8, cellSize * 0.6f));
-                    cs.newLineAtOffset(x + cellSize * 0.2f, y + cellSize * 0.3f);
-                    cs.showText(code);
-                    cs.endText();
+                    var textColor = brightness > 128 ? "0 0 0" : "1 1 1";
+                    content.append("BT\n");
+                    content.append(textColor + " rg\n");
+                    content.append(String.format(Locale.US, "/F1 %.1f Tf\n", Math.min(8, cellSize * 0.6f)));
+                    content.append(String.format(Locale.US, "%.2f %.2f Td\n", x + cellSize * 0.2f, y + cellSize * 0.3f));
+                    content.append("(" + code + ") Tj\n");
+                    content.append("ET\n");
                 }
             }
         }
+
+        writer.addPage(content.toString());
     }
 
-    private Map<Color, Integer> countColors(BufferedImage image, List<Color> palette) {
+    private Map<Color, Integer> countColors(BufferedImage image, List<Color> palette, int pixelSize) {
         var counts = new LinkedHashMap<Color, Integer>();
         for (var c : palette) counts.put(c, 0);
 
-        for (var y = 0; y < image.getHeight(); y++) {
-            for (var x = 0; x < image.getWidth(); x++) {
-                var pixel = new Color(image.getRGB(x, y));
+        for (var y = 0; y < image.getHeight(); y += pixelSize) {
+            for (var x = 0; x < image.getWidth(); x += pixelSize) {
+                var imgX = x + pixelSize / 2;
+                var imgY = y + pixelSize / 2;
+                if (imgX >= image.getWidth()) imgX = image.getWidth() - 1;
+                if (imgY >= image.getHeight()) imgY = image.getHeight() - 1;
+                var pixel = new Color(image.getRGB(imgX, imgY));
                 var nearest = findNearest(pixel, palette);
                 counts.merge(nearest, 1, Integer::sum);
             }
@@ -337,5 +274,91 @@ public class PDFGenerator {
     private String getColorCode(int index) {
         if (index < 26) return String.valueOf((char) ('A' + index));
         return String.valueOf((char) ('A' + index / 26 - 1)) + (char) ('A' + index % 26);
+    }
+
+    private static class PDFWriter {
+        private final OutputStream out;
+        private final List<Long> objectOffsets = new ArrayList<>();
+        private final List<Integer> pageObjectIds = new ArrayList<>();
+        private long currentOffset = 0;
+        private int nextObjectId = 1;
+
+        PDFWriter(OutputStream out) throws IOException {
+            this.out = out;
+            write("%PDF-1.4\n%\u00E2\u00E3\u00CF\u00D3\n");
+        }
+
+        void addPage(String content) throws IOException {
+            var contentBytes = content.getBytes(StandardCharsets.ISO_8859_1);
+
+            // Content stream object
+            var contentObjId = nextObjectId++;
+            objectOffsets.add(currentOffset);
+            write(contentObjId + " 0 obj\n");
+            write("<< /Length " + contentBytes.length + " >>\n");
+            write("stream\n");
+            out.write(contentBytes);
+            currentOffset += contentBytes.length;
+            write("\nendstream\n");
+            write("endobj\n");
+
+            // Page object
+            var pageObjId = nextObjectId++;
+            objectOffsets.add(currentOffset);
+            pageObjectIds.add(pageObjId);
+            write(pageObjId + " 0 obj\n");
+            write("<< /Type /Page /Parent 1 0 R /MediaBox [0 0 595.28 841.89] ");
+            write("/Contents " + contentObjId + " 0 R /Resources << /Font << /F1 2 0 R >> >> >>\n");
+            write("endobj\n");
+        }
+
+        void finish() throws IOException {
+            // Font object (Helvetica)
+            var fontObjId = nextObjectId++;
+            objectOffsets.add(currentOffset);
+            write(fontObjId + " 0 obj\n");
+            write("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\n");
+            write("endobj\n");
+
+            // Pages object (must be object 1)
+            var pagesOffset = currentOffset;
+            write("1 0 obj\n");
+            write("<< /Type /Pages /Kids [");
+            for (var pageId : pageObjectIds) {
+                write(pageId + " 0 R ");
+            }
+            write("] /Count " + pageObjectIds.size() + " >>\n");
+            write("endobj\n");
+
+            // Catalog object
+            var catalogObjId = nextObjectId++;
+            objectOffsets.add(currentOffset);
+            write(catalogObjId + " 0 obj\n");
+            write("<< /Type /Catalog /Pages 1 0 R >>\n");
+            write("endobj\n");
+
+            // Cross-reference table
+            var xrefOffset = currentOffset;
+            write("xref\n");
+            write("0 " + (nextObjectId) + "\n");
+            write("0000000000 65535 f \n");
+            write(String.format("%010d 00000 n \n", pagesOffset));
+            for (var i = 0; i < objectOffsets.size(); i++) {
+                write(String.format("%010d 00000 n \n", objectOffsets.get(i)));
+            }
+
+            // Trailer
+            write("trailer\n");
+            write("<< /Size " + nextObjectId + " /Root " + catalogObjId + " 0 R >>\n");
+            write("startxref\n");
+            write(xrefOffset + "\n");
+            write("%%EOF\n");
+        }
+
+        private void write(String s) throws IOException {
+            var bytes = s.getBytes(StandardCharsets.ISO_8859_1);
+            out.write(bytes);
+            currentOffset += bytes.length;
+        }
     }
 }

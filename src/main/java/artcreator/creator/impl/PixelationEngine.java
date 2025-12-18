@@ -13,16 +13,15 @@ public class PixelationEngine {
     }
 
     public BufferedImage pixelate(BufferedImage original, ArtworkConfig config) {
-        var gridW = config.getGridWidth();
-        var gridH = config.getGridHeight();
+        var pixelSize = config.getPixelSize();
         var colorCount = config.getColorCount();
         var mode3D = config.isMode3D();
 
-        var pixelated = pixelateGrid(original, gridW, gridH);
+        var pixelated = pixelateSimple(original, pixelSize);
         var quantized = ColorQuantizer.quantize(pixelated, colorCount);
 
         if (mode3D) {
-            return apply3DEffect(quantized, gridW, gridH);
+            return apply3DEffect(quantized, pixelSize);
         }
         return quantized;
     }
@@ -45,37 +44,17 @@ public class PixelationEngine {
         return result;
     }
 
-    private BufferedImage pixelateGrid(BufferedImage original, int gridW, int gridH) {
-        var width = original.getWidth();
-        var height = original.getHeight();
-        var cellW = Math.max(1, width / gridW);
-        var cellH = Math.max(1, height / gridH);
-        var result = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
-        for (var gy = 0; gy < gridH; gy++) {
-            for (var gx = 0; gx < gridW; gx++) {
-                var x = gx * cellW;
-                var y = gy * cellH;
-                var color = calculateAverageColor(original, x, y, cellW, cellH);
-                fillBlock(result, x, y, cellW, cellH, color, width, height);
-            }
-        }
-        return result;
-    }
-
-    private BufferedImage apply3DEffect(BufferedImage image, int gridW, int gridH) {
+    private BufferedImage apply3DEffect(BufferedImage image, int pixelSize) {
         var width = image.getWidth();
         var height = image.getHeight();
-        var cellW = Math.max(1, width / gridW);
-        var cellH = Math.max(1, height / gridH);
         var result = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         var g = result.createGraphics();
         g.drawImage(image, 0, 0, null);
 
-        for (var gy = 0; gy < gridH; gy++) {
-            for (var gx = 0; gx < gridW; gx++) {
-                var x = gx * cellW;
-                var y = gy * cellH;
+        for (var y = 0; y < height; y += pixelSize) {
+            for (var x = 0; x < width; x += pixelSize) {
+                var cellW = Math.min(pixelSize, width - x);
+                var cellH = Math.min(pixelSize, height - y);
 
                 // Shadow (bottom-right)
                 g.setColor(new Color(0, 0, 0, 60));

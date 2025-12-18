@@ -1,17 +1,13 @@
 package artcreator.domain;
 
 public class ArtworkConfig {
-    private int gridWidth = 50;
-    private int gridHeight = 50;
+    private int pixelSize = 10;
     private int colorCount = 16;
     private boolean mode3D = false;
     private OutputSize outputSize = OutputSize.A4;
 
-    public int getGridWidth() { return gridWidth; }
-    public void setGridWidth(int gridWidth) { this.gridWidth = Math.max(10, Math.min(200, gridWidth)); }
-
-    public int getGridHeight() { return gridHeight; }
-    public void setGridHeight(int gridHeight) { this.gridHeight = Math.max(10, Math.min(200, gridHeight)); }
+    public int getPixelSize() { return pixelSize; }
+    public void setPixelSize(int pixelSize) { this.pixelSize = Math.max(2, Math.min(50, pixelSize)); }
 
     public int getColorCount() { return colorCount; }
     public void setColorCount(int colorCount) {

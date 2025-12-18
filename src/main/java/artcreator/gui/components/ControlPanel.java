@@ -6,11 +6,12 @@ import artcreator.gui.UIConfig;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Hashtable;
 
 public class ControlPanel {
     private final JPanel panel;
-    private final JSpinner gridWidthSpinner;
-    private final JSpinner gridHeightSpinner;
+    private final JSlider pixelSizeSlider;
+    private final JLabel pixelSizeLabel;
     private final JComboBox<Integer> colorCountCombo;
     private final JCheckBox mode3DCheck;
     private final JComboBox<OutputSize> outputSizeCombo;
@@ -22,16 +23,29 @@ public class ControlPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(UIConfig.padding(10, 15));
 
-        // Row 1: Load + Grid Resolution
+        // Row 1: Load + Pixel Size Slider
         var row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
         row1.add(UIConfig.button("Load Image", onLoad));
 
-        row1.add(new JLabel("Grid:"));
-        gridWidthSpinner = new JSpinner(new SpinnerNumberModel(50, 10, 200, 10));
-        gridHeightSpinner = new JSpinner(new SpinnerNumberModel(50, 10, 200, 10));
-        row1.add(gridWidthSpinner);
-        row1.add(new JLabel("x"));
-        row1.add(gridHeightSpinner);
+        row1.add(new JLabel("Pixel Size:"));
+        pixelSizeSlider = new JSlider(2, 50, 10);
+        pixelSizeSlider.setMajorTickSpacing(12);
+        pixelSizeSlider.setMinorTickSpacing(4);
+        pixelSizeSlider.setPaintTicks(true);
+        var labels = new Hashtable<Integer, JLabel>();
+        labels.put(2, new JLabel("2"));
+        labels.put(14, new JLabel("14"));
+        labels.put(26, new JLabel("26"));
+        labels.put(38, new JLabel("38"));
+        labels.put(50, new JLabel("50"));
+        pixelSizeSlider.setLabelTable(labels);
+        pixelSizeSlider.setPaintLabels(true);
+        pixelSizeSlider.setPreferredSize(new Dimension(200, 50));
+        pixelSizeLabel = new JLabel("10");
+        pixelSizeLabel.setPreferredSize(new Dimension(25, 20));
+        pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
+        row1.add(pixelSizeSlider);
+        row1.add(pixelSizeLabel);
 
         // Row 2: Colors, 3D, Output Size, Buttons
         var row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
@@ -71,15 +85,13 @@ public class ControlPanel {
     }
 
     public void applyToConfig(ArtworkConfig config) {
-        config.setGridWidth((Integer) gridWidthSpinner.getValue());
-        config.setGridHeight((Integer) gridHeightSpinner.getValue());
+        config.setPixelSize(pixelSizeSlider.getValue());
         config.setColorCount((Integer) colorCountCombo.getSelectedItem());
         config.setMode3D(mode3DCheck.isSelected());
         config.setOutputSize((OutputSize) outputSizeCombo.getSelectedItem());
     }
 
-    public int getGridWidth() { return (Integer) gridWidthSpinner.getValue(); }
-    public int getGridHeight() { return (Integer) gridHeightSpinner.getValue(); }
+    public int getPixelSize() { return pixelSizeSlider.getValue(); }
     public int getColorCount() { return (Integer) colorCountCombo.getSelectedItem(); }
     public boolean isMode3D() { return mode3DCheck.isSelected(); }
     public OutputSize getOutputSize() { return (OutputSize) outputSizeCombo.getSelectedItem(); }

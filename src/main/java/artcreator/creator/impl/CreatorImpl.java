@@ -59,8 +59,7 @@ public class CreatorImpl {
         }
         // Copy config values to template's config
         var templateConfig = template.getConfig();
-        templateConfig.setGridWidth(config.getGridWidth());
-        templateConfig.setGridHeight(config.getGridHeight());
+        templateConfig.setPixelSize(config.getPixelSize());
         templateConfig.setColorCount(config.getColorCount());
         templateConfig.setMode3D(config.isMode3D());
         templateConfig.setOutputSize(config.getOutputSize());
@@ -68,7 +67,7 @@ public class CreatorImpl {
         var pixelated = engine.pixelate(template.getOriginalImage(), templateConfig);
         template.setPixelatedImage(pixelated);
         stateMachine.setState(S.PIXELATED);
-        LOG.log(Level.INFO, "Applied config: " + config.getGridWidth() + "x" + config.getGridHeight() +
+        LOG.log(Level.INFO, "Applied config: pixelSize=" + config.getPixelSize() +
                 ", colors=" + config.getColorCount() + ", 3D=" + config.isMode3D());
     }
 
