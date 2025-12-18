@@ -11,7 +11,7 @@ public class ControlPanel {
     private final JPanel panel;
     private final JSlider pixelSizeSlider;
     private final JComboBox<Integer> colorCountCombo;
-    private final JCheckBox mode3DCheck;
+    private final ToggleSwitch modeToggle;
     private final JComboBox<OutputSize> outputSizeCombo;
     private final JButton applyButton;
     private final JButton pdfButton;
@@ -44,17 +44,8 @@ public class ControlPanel {
         // Row 2: 3D, Output Size, Buttons
         var row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
 
-        var modeGroup = new ButtonGroup();
-        var mode2DBtn = new JToggleButton("2D", true);
-        var mode3DBtn = new JToggleButton("3D", false);
-        modeGroup.add(mode2DBtn);
-        modeGroup.add(mode3DBtn);
-        mode3DCheck = new JCheckBox();
-        mode3DCheck.setVisible(false);
-        mode2DBtn.addActionListener(_ -> mode3DCheck.setSelected(false));
-        mode3DBtn.addActionListener(_ -> mode3DCheck.setSelected(true));
-        row2.add(mode2DBtn);
-        row2.add(mode3DBtn);
+        modeToggle = new ToggleSwitch("2D", "3D");
+        row2.add(modeToggle);
 
         row2.add(new JLabel("Output:"));
         outputSizeCombo = new JComboBox<>(OutputSize.values());
@@ -87,7 +78,7 @@ public class ControlPanel {
     public void applyToConfig(ArtworkConfig config) {
         config.setPixelSize(pixelSizeSlider.getValue());
         config.setColorCount((Integer) colorCountCombo.getSelectedItem());
-        config.setMode3D(mode3DCheck.isSelected());
+        config.setMode3D(modeToggle.isSelected());
         config.setOutputSize((OutputSize) outputSizeCombo.getSelectedItem());
     }
 }
