@@ -1,17 +1,30 @@
 package artcreator.gui;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 
 public final class UIConfig {
-    public static final Font FONT = new Font("SansSerif", Font.PLAIN, 14);
-    public static final Font FONT_BOLD = new Font("SansSerif", Font.BOLD, 14);
-    public static final Font FONT_LARGE = new Font("SansSerif", Font.PLAIN, 16);
-    public static final Font FONT_TITLE = new Font("SansSerif", Font.BOLD, 36);
-    public static final Cursor HAND = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+    // Libadwaita-inspired colors
+    public static final Color BG_PRIMARY = new Color(250, 250, 250);
+    public static final Color BG_SECONDARY = new Color(242, 242, 242);
+    public static final Color BG_DARK = new Color(222, 221, 227);
+    public static final Color ACCENT = new Color(181, 131, 141);
+    public static final Color ACCENT_HOVER = new Color(161, 111, 121);
+    public static final Color TEXT_PRIMARY = new Color(46, 46, 46);
+    public static final Color TEXT_SECONDARY = new Color(119, 118, 123);
+    public static final Color BORDER = new Color(213, 213, 213);
 
-    private UIConfig() {
-    }
+    // Fonts
+    public static final Font FONT = new Font("Cantarell", Font.PLAIN, 14);
+    public static final Font FONT_BOLD = new Font("Cantarell", Font.BOLD, 14);
+    public static final Font FONT_LARGE = new Font("Cantarell", Font.PLAIN, 16);
+    public static final Font FONT_TITLE = new Font("Cantarell", Font.BOLD, 32);
+
+    public static final Cursor HAND = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+    public static final int RADIUS = 8;
+
+    private UIConfig() {}
 
     public static void init() {
         var defaults = UIManager.getDefaults();
@@ -19,12 +32,8 @@ public final class UIConfig {
             var k = key.toString();
             if (k.endsWith(".font")) UIManager.put(key, FONT);
         }
-
-        // Center alignment for components
-        UIManager.put("Label.horizontalAlignment", SwingConstants.CENTER);
-        UIManager.put("Button.horizontalAlignment", SwingConstants.CENTER);
-        UIManager.put("TextField.horizontalAlignment", SwingConstants.CENTER);
-        UIManager.put("TextArea.horizontalAlignment", SwingConstants.CENTER);
+        UIManager.put("Panel.background", BG_PRIMARY);
+        UIManager.put("Button.arc", RADIUS * 2);
     }
 
     public static <T extends AbstractButton> T handCursor(T button) {
@@ -50,16 +59,33 @@ public final class UIConfig {
 
     public static <T extends JComponent> T centered(T component) {
         component.setAlignmentX(Component.CENTER_ALIGNMENT);
-        if (!(component instanceof JLabel label)) return component;
-        label.setHorizontalAlignment(SwingConstants.CENTER);
+        if (component instanceof JLabel label) {
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+        }
         return component;
     }
 
-    public static javax.swing.border.Border padding(int all) {
+    public static Border padding(int all) {
         return BorderFactory.createEmptyBorder(all, all, all, all);
     }
 
-    public static javax.swing.border.Border padding(int vertical, int horizontal) {
+    public static Border padding(int vertical, int horizontal) {
         return BorderFactory.createEmptyBorder(vertical, horizontal, vertical, horizontal);
+    }
+
+    public static Border padding(int top, int left, int bottom, int right) {
+        return BorderFactory.createEmptyBorder(top, left, bottom, right);
+    }
+
+    // Draw rounded rectangle helper
+    public static void drawRoundedRect(Graphics2D g, int x, int y, int w, int h, int r, Color fill, Color border) {
+        if (fill != null) {
+            g.setColor(fill);
+            g.fillRoundRect(x, y, w, h, r, r);
+        }
+        if (border != null) {
+            g.setColor(border);
+            g.drawRoundRect(x, y, w, h, r, r);
+        }
     }
 }

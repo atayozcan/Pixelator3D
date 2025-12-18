@@ -14,8 +14,6 @@ import artcreator.statemachine.port.Subject;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
-import java.lang.foreign.PaddingLayout;
-import java.util.TooManyListenersException;
 
 public class CreatorFrame extends JFrame implements Observer {
     @Serial
@@ -35,6 +33,7 @@ public class CreatorFrame extends JFrame implements Observer {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(800, 600);
         setLocationRelativeTo(null);
+        getContentPane().setBackground(UIConfig.BG_PRIMARY);
 
         Subject subject = StateMachineFactory.FACTORY.subject();
         subject.attach(this);
