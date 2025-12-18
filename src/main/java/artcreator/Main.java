@@ -17,6 +17,7 @@ public class Main {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                UIManager.put("Slider.paintValue", Boolean.FALSE);
                 UIConfig.init();
                 new CreatorFrame().setVisible(true);
             } catch (Exception e) {
