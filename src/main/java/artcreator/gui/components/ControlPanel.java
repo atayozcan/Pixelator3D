@@ -36,13 +36,13 @@ public class ControlPanel {
         pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
         row1.add(pixelSizeLabel);
 
-        // Row 2: Colors, 3D, Output Size, Buttons
-        var row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
-
-        row2.add(new JLabel("Colors:"));
+        row1.add(new JLabel("Colors:"));
         colorCountCombo = new JComboBox<>(new Integer[]{8, 16, 32});
         colorCountCombo.setSelectedItem(16);
-        row2.add(colorCountCombo);
+        row1.add(colorCountCombo);
+
+        // Row 2: 3D, Output Size, Buttons
+        var row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
 
         mode3DCheck = new JCheckBox("3D Effect");
         row2.add(mode3DCheck);
