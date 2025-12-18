@@ -30,7 +30,7 @@ public class CreatorFrame extends JFrame implements Observer {
     private final JPanel homeContent = new JPanel(homeCardLayout);
     private final TabBar tabBar;
 
-    public CreatorFrame() throws TooManyListenersException {
+    public CreatorFrame() {
         super("Pixelator3D");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(800, 600);
