@@ -6,7 +6,6 @@ import artcreator.gui.UIConfig;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Hashtable;
 
 public class ControlPanel {
     private final JPanel panel;
@@ -29,17 +28,10 @@ public class ControlPanel {
 
         row1.add(new JLabel("Pixel Size:"));
         pixelSizeSlider = new JSlider(2, 50, 10);
-        pixelSizeSlider.setMajorTickSpacing(16);
+        pixelSizeSlider.setMajorTickSpacing(12);
         pixelSizeSlider.setMinorTickSpacing(4);
         pixelSizeSlider.setPaintTicks(true);
-        var labels = new Hashtable<Integer, JLabel>();
-        labels.put(2, new JLabel("2"));
-        labels.put(18, new JLabel("18"));
-        labels.put(34, new JLabel("34"));
-        labels.put(50, new JLabel("50"));
-        pixelSizeSlider.setLabelTable(labels);
-        pixelSizeSlider.setPaintLabels(true);
-        pixelSizeSlider.setPreferredSize(new Dimension(180, 45));
+        pixelSizeSlider.setPreferredSize(new Dimension(150, 30));
         pixelSizeLabel = new JLabel("10");
         pixelSizeLabel.setFont(UIConfig.FONT_BOLD);
         pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
