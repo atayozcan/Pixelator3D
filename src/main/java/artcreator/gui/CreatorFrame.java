@@ -5,6 +5,7 @@ import artcreator.creator.port.Creator;
 import artcreator.gui.components.ContentPage;
 import artcreator.gui.components.ControlPanel;
 import artcreator.gui.components.ImagePreviewPanel;
+import artcreator.gui.components.TabBar;
 import artcreator.statemachine.StateMachineFactory;
 import artcreator.statemachine.port.Observer;
 import artcreator.statemachine.port.State;
@@ -21,9 +22,13 @@ public class CreatorFrame extends JFrame implements Observer {
     private static final long serialVersionUID = 1L;
 
     private final transient Creator creator = CreatorFactory.FACTORY.creator();
-    private final JTabbedPane tabbedPane;
     private final ControlPanel controlPanel;
     private final ImagePreviewPanel imagePreviewPanel;
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel content = new JPanel(cardLayout);
+    private final CardLayout homeCardLayout = new CardLayout();
+    private final JPanel homeContent = new JPanel(homeCardLayout);
+    private final TabBar tabBar;
 
     public CreatorFrame() throws TooManyListenersException {
         super("Pixelator3D");
@@ -38,8 +43,19 @@ public class CreatorFrame extends JFrame implements Observer {
         controlPanel = new ControlPanel(controller::onLoadImage, controller::onPixelate);
         imagePreviewPanel = new ImagePreviewPanel();
 
-        var homePage = new ContentPage("Welcome to Pixelator3D", null, null,
+        // Welcome view
+        var welcomePage = new ContentPage("Welcome to Pixelator3D", null, null,
                 ContentPage.createActionButton("Select Image", controller::onLoadImage));
+
+        // Editor view
+        var editorPanel = new JPanel(new BorderLayout());
+        editorPanel.add(controlPanel.getPanel(), BorderLayout.NORTH);
+        editorPanel.add(imagePreviewPanel.getPanel(), BorderLayout.CENTER);
+
+        // Home content switches between welcome and editor
+        homeContent.add(welcomePage.getPanel(), "welcome");
+        homeContent.add(editorPanel, "editor");
+
         var helpPage = new ContentPage("How to Use Pixelator3D", null, """
                 1. Load Image: Click the 'Select Image' button to choose an image file
                 2. Adjust Pixel Size: Use the slider to set the desired pixelation level (2-50)
@@ -55,17 +71,18 @@ public class CreatorFrame extends JFrame implements Observer {
                 Copyright 2025
                 """, null);
 
-        var editorPanel = new JPanel(new BorderLayout());
-        editorPanel.add(controlPanel.getPanel(), BorderLayout.NORTH);
-        editorPanel.add(imagePreviewPanel.getPanel(), BorderLayout.CENTER);
+        content.add(homeContent, "home");
+        content.add(helpPage.getPanel(), "help");
+        content.add(aboutPage.getPanel(), "about");
 
-        tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Home", homePage.getPanel());
-        tabbedPane.addTab("Editor", editorPanel);
-        tabbedPane.addTab("Help", helpPage.getPanel());
-        tabbedPane.addTab("About", aboutPage.getPanel());
+        tabBar = new TabBar(cardLayout, content);
+        tabBar.addTab("Home", "home");
+        tabBar.addTab("Help", "help");
+        tabBar.addTab("About", "about");
 
-        add(tabbedPane);
+        setLayout(new BorderLayout());
+        add(tabBar.getPanel(), BorderLayout.NORTH);
+        add(content, BorderLayout.CENTER);
     }
 
     @Override
@@ -73,11 +90,15 @@ public class CreatorFrame extends JFrame implements Observer {
         SwingUtilities.invokeLater(() -> {
             switch (newState) {
                 case S.HOME -> {
-                    tabbedPane.setSelectedIndex(0);
+                    tabBar.setSelected(0);
+                    cardLayout.show(content, "home");
+                    homeCardLayout.show(homeContent, "welcome");
                     controlPanel.setPixelateButtonEnabled(false);
                 }
                 case S.IMAGE_LOADED, S.PIXELATED -> {
-                    tabbedPane.setSelectedIndex(1);
+                    tabBar.setSelected(0);
+                    cardLayout.show(content, "home");
+                    homeCardLayout.show(homeContent, "editor");
                     controlPanel.setPixelateButtonEnabled(true);
                     imagePreviewPanel.displayImage(creator.getTemplate().getDisplayImage());
                 }
