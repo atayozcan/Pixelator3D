@@ -28,10 +28,7 @@ public class ControlPanel {
 
         row1.add(new JLabel("Pixel Size:"));
         pixelSizeSlider = new JSlider(2, 50, 10);
-        pixelSizeSlider.setMajorTickSpacing(12);
-        pixelSizeSlider.setMinorTickSpacing(4);
-        pixelSizeSlider.setPaintTicks(true);
-        pixelSizeSlider.setPreferredSize(new Dimension(150, 30));
+        pixelSizeSlider.setPreferredSize(new Dimension(120, 20));
         pixelSizeLabel = new JLabel("10");
         pixelSizeLabel.setFont(UIConfig.FONT_BOLD);
         pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
