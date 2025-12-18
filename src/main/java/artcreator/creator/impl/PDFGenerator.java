@@ -281,7 +281,8 @@ public class PDFGenerator {
         private final List<Long> objectOffsets = new ArrayList<>();
         private final List<Integer> pageObjectIds = new ArrayList<>();
         private long currentOffset = 0;
-        private int nextObjectId = 1;
+        // Reserved: 1=Pages, 2=Font, 3=Catalog
+        private int nextObjectId = 4;
 
         PDFWriter(OutputStream out) throws IOException {
             this.out = out;
@@ -313,14 +314,13 @@ public class PDFGenerator {
         }
 
         void finish() throws IOException {
-            // Font object (Helvetica)
-            var fontObjId = nextObjectId++;
-            objectOffsets.add(currentOffset);
-            write(fontObjId + " 0 obj\n");
+            // Font object (object 2 - referenced by pages)
+            var fontOffset = currentOffset;
+            write("2 0 obj\n");
             write("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\n");
             write("endobj\n");
 
-            // Pages object (must be object 1)
+            // Pages object (object 1)
             var pagesOffset = currentOffset;
             write("1 0 obj\n");
             write("<< /Type /Pages /Kids [");
@@ -330,26 +330,27 @@ public class PDFGenerator {
             write("] /Count " + pageObjectIds.size() + " >>\n");
             write("endobj\n");
 
-            // Catalog object
-            var catalogObjId = nextObjectId++;
-            objectOffsets.add(currentOffset);
-            write(catalogObjId + " 0 obj\n");
+            // Catalog object (object 3)
+            var catalogOffset = currentOffset;
+            write("3 0 obj\n");
             write("<< /Type /Catalog /Pages 1 0 R >>\n");
             write("endobj\n");
 
             // Cross-reference table
             var xrefOffset = currentOffset;
             write("xref\n");
-            write("0 " + (nextObjectId) + "\n");
+            write("0 " + nextObjectId + "\n");
             write("0000000000 65535 f \n");
             write(String.format("%010d 00000 n \n", pagesOffset));
-            for (var i = 0; i < objectOffsets.size(); i++) {
-                write(String.format("%010d 00000 n \n", objectOffsets.get(i)));
+            write(String.format("%010d 00000 n \n", fontOffset));
+            write(String.format("%010d 00000 n \n", catalogOffset));
+            for (var offset : objectOffsets) {
+                write(String.format("%010d 00000 n \n", offset));
             }
 
             // Trailer
             write("trailer\n");
-            write("<< /Size " + nextObjectId + " /Root " + catalogObjId + " 0 R >>\n");
+            write("<< /Size " + nextObjectId + " /Root 3 0 R >>\n");
             write("startxref\n");
             write(xrefOffset + "\n");
             write("%%EOF\n");
