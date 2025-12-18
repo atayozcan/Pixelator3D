@@ -30,11 +30,7 @@ public class ControlPanel {
         pixelSizeSlider.setPaintLabels(false);
         pixelSizeSlider.putClientProperty("Slider.paintValue", Boolean.FALSE);
         pixelSizeSlider.setPreferredSize(new Dimension(120, 20));
-        var pixelSizeLabel = new JLabel("10");
-        pixelSizeLabel.setFont(UIConfig.FONT_BOLD);
-        pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
         row1.add(pixelSizeSlider);
-        row1.add(pixelSizeLabel);
 
         // Row 2: Colors, 3D, Output Size, Buttons
         var row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
