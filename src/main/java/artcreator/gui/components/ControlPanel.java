@@ -29,20 +29,19 @@ public class ControlPanel {
 
         row1.add(new JLabel("Pixel Size:"));
         pixelSizeSlider = new JSlider(2, 50, 10);
-        pixelSizeSlider.setMajorTickSpacing(12);
+        pixelSizeSlider.setMajorTickSpacing(16);
         pixelSizeSlider.setMinorTickSpacing(4);
         pixelSizeSlider.setPaintTicks(true);
         var labels = new Hashtable<Integer, JLabel>();
         labels.put(2, new JLabel("2"));
-        labels.put(14, new JLabel("14"));
-        labels.put(26, new JLabel("26"));
-        labels.put(38, new JLabel("38"));
+        labels.put(18, new JLabel("18"));
+        labels.put(34, new JLabel("34"));
         labels.put(50, new JLabel("50"));
         pixelSizeSlider.setLabelTable(labels);
         pixelSizeSlider.setPaintLabels(true);
-        pixelSizeSlider.setPreferredSize(new Dimension(200, 50));
+        pixelSizeSlider.setPreferredSize(new Dimension(180, 45));
         pixelSizeLabel = new JLabel("10");
-        pixelSizeLabel.setPreferredSize(new Dimension(25, 20));
+        pixelSizeLabel.setFont(UIConfig.FONT_BOLD);
         pixelSizeSlider.addChangeListener(_ -> pixelSizeLabel.setText(String.valueOf(pixelSizeSlider.getValue())));
         row1.add(pixelSizeSlider);
         row1.add(pixelSizeLabel);

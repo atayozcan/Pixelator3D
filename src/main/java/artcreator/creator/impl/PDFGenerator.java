@@ -110,6 +110,18 @@ public class PDFGenerator {
             if (y < MARGIN + 100) break;
         }
 
+        // 3D mode: add stick count
+        if (config.isMode3D()) {
+            var totalPixels = colorCounts.values().stream().mapToInt(Integer::intValue).sum();
+            y -= 10;
+            content.append("BT\n");
+            content.append("/F1 12 Tf\n");
+            content.append(String.format(Locale.US, "%.2f %.2f Td\n", MARGIN, y));
+            content.append("(3D-Modus: " + totalPixels + " Staebchen benoetigt) Tj\n");
+            content.append("ET\n");
+            y -= 20;
+        }
+
         // Instructions
         y -= 30;
         content.append("BT\n");
@@ -126,7 +138,11 @@ public class PDFGenerator {
         content.append("0 -16 Td\n");
         content.append("(2. Jede Zelle zeigt den Farbcode \\(z.B. A, B, C...\\).) Tj\n");
         content.append("0 -16 Td\n");
-        content.append("(3. Lege die entsprechenden Materialien nach der Legende.) Tj\n");
+        if (config.isMode3D()) {
+            content.append("(3. Fuer 3D: Staebchen unter jede Zelle setzen.) Tj\n");
+        } else {
+            content.append("(3. Lege die entsprechenden Materialien nach der Legende.) Tj\n");
+        }
         content.append("ET\n");
 
         writer.addPage(content.toString());

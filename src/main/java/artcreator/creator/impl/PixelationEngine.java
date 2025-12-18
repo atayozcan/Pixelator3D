@@ -15,15 +15,9 @@ public class PixelationEngine {
     public BufferedImage pixelate(BufferedImage original, ArtworkConfig config) {
         var pixelSize = config.getPixelSize();
         var colorCount = config.getColorCount();
-        var mode3D = config.isMode3D();
 
         var pixelated = pixelateSimple(original, pixelSize);
-        var quantized = ColorQuantizer.quantize(pixelated, colorCount);
-
-        if (mode3D) {
-            return apply3DEffect(quantized, pixelSize);
-        }
-        return quantized;
+        return ColorQuantizer.quantize(pixelated, colorCount);
     }
 
     public List<Color> getPalette(BufferedImage image, int colorCount) {
@@ -41,33 +35,6 @@ public class PixelationEngine {
                 fillBlock(result, x, y, pixelSize, pixelSize, color, width, height);
             }
         }
-        return result;
-    }
-
-    private BufferedImage apply3DEffect(BufferedImage image, int pixelSize) {
-        var width = image.getWidth();
-        var height = image.getHeight();
-        var result = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        var g = result.createGraphics();
-        g.drawImage(image, 0, 0, null);
-
-        for (var y = 0; y < height; y += pixelSize) {
-            for (var x = 0; x < width; x += pixelSize) {
-                var cellW = Math.min(pixelSize, width - x);
-                var cellH = Math.min(pixelSize, height - y);
-
-                // Shadow (bottom-right)
-                g.setColor(new Color(0, 0, 0, 60));
-                g.fillRect(x + cellW - 2, y + 2, 2, cellH - 2);
-                g.fillRect(x + 2, y + cellH - 2, cellW - 2, 2);
-
-                // Highlight (top-left)
-                g.setColor(new Color(255, 255, 255, 40));
-                g.drawLine(x, y, x + cellW - 1, y);
-                g.drawLine(x, y, x, y + cellH - 1);
-            }
-        }
-        g.dispose();
         return result;
     }
 
