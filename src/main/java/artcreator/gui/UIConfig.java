@@ -4,14 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 
 public final class UIConfig {
-    private UIConfig() {}
-
     public static final Font FONT = new Font("SansSerif", Font.PLAIN, 14);
     public static final Font FONT_BOLD = new Font("SansSerif", Font.BOLD, 14);
     public static final Font FONT_LARGE = new Font("SansSerif", Font.PLAIN, 16);
     public static final Font FONT_TITLE = new Font("SansSerif", Font.BOLD, 36);
-
     public static final Cursor HAND = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+
+    private UIConfig() {
+    }
 
     public static void init() {
         var defaults = UIManager.getDefaults();

@@ -2,6 +2,7 @@ package artcreator.creator;
 
 import artcreator.creator.impl.CreatorImpl;
 import artcreator.creator.port.Creator;
+import artcreator.domain.ArtworkConfig;
 import artcreator.domain.DomainFactory;
 import artcreator.domain.Template;
 import artcreator.statemachine.StateMachineFactory;
@@ -32,6 +33,18 @@ public class CreatorFacade implements CreatorFactory, Creator {
     public synchronized void pixelate(int pixelSize) {
         if (!this.stateMachine.getState().isSubStateOf(S.IMAGE_LOADED)) return;
         this.creator.pixelate(pixelSize);
+    }
+
+    @Override
+    public synchronized void applyConfig(ArtworkConfig config) {
+        if (!this.stateMachine.getState().isSubStateOf(S.IMAGE_LOADED)) return;
+        this.creator.applyConfig(config);
+    }
+
+    @Override
+    public synchronized void generatePDF(File outputFile) {
+        if (!this.stateMachine.getState().isSubStateOf(S.IMAGE_LOADED)) return;
+        this.creator.generatePDF(outputFile);
     }
 
     @Override

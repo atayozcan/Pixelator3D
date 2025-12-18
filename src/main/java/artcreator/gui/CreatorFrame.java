@@ -9,7 +9,6 @@ import artcreator.gui.components.TabBar;
 import artcreator.statemachine.StateMachineFactory;
 import artcreator.statemachine.port.Observer;
 import artcreator.statemachine.port.State;
-import artcreator.statemachine.port.State.S;
 import artcreator.statemachine.port.Subject;
 
 import javax.swing.*;
@@ -40,12 +39,11 @@ public class CreatorFrame extends JFrame implements Observer {
         subject.attach(this);
 
         var controller = new Controller(this, subject, creator);
-        controlPanel = new ControlPanel(controller::onLoadImage, controller::onPixelate);
+        controlPanel = new ControlPanel(controller::onLoadImage, controller::onApply, controller::onGeneratePDF);
         imagePreviewPanel = new ImagePreviewPanel();
 
         // Welcome view
-        var welcomePage = new ContentPage("Welcome to Pixelator3D", null, null,
-                ContentPage.createActionButton("Select Image", controller::onLoadImage));
+        var welcomePage = new ContentPage("Welcome to Pixelator3D", null, null, ContentPage.createActionButton("Select Image", controller::onLoadImage));
 
         // Editor view
         var editorPanel = new JPanel(new BorderLayout());
@@ -57,17 +55,19 @@ public class CreatorFrame extends JFrame implements Observer {
         homeContent.add(editorPanel, "editor");
 
         var helpPage = new ContentPage("How to Use Pixelator3D", null, """
-                1. Load Image: Click the 'Select Image' button to choose an image file
-                2. Adjust Pixel Size: Use the slider to set the desired pixelation level (2-50)
-                3. Pixelate: Click the 'Pixelate' button to apply the effect
+                1. Load Image: Click 'Load Image' to select an image file (JPG, PNG, GIF, BMP)
+                2. Configure: Set grid resolution, color count (8/16/32), and 2D/3D mode
+                3. Apply: Click 'Apply' to see the preview with your settings
+                4. Generate PDF: Click 'Generate PDF' to create building instructions
 
-                Supported formats: JPG, PNG, GIF, BMP
+                The PDF includes a material list, legend, and grid template.
+                For sizes larger than A4, the grid is automatically tiled.
                 """, null);
         var aboutPage = new ContentPage("Pixelator3D", "Version 1.0", """
                 A simple application for you to create your dream art!
-
+                
                 Made by Atay Ozcan (95270) and Jose Acena (85534).
-
+                
                 Copyright 2025
                 """, null);
 
@@ -89,20 +89,21 @@ public class CreatorFrame extends JFrame implements Observer {
     public void update(State newState) {
         SwingUtilities.invokeLater(() -> {
             switch (newState) {
-                case S.HOME -> {
+                case State.S.HOME -> {
                     tabBar.setSelected(0);
                     cardLayout.show(content, "home");
                     homeCardLayout.show(homeContent, "welcome");
-                    controlPanel.setPixelateButtonEnabled(false);
+                    controlPanel.setButtonsEnabled(false);
                 }
-                case S.IMAGE_LOADED, S.PIXELATED -> {
+                case State.S.IMAGE_LOADED, State.S.PIXELATED -> {
                     tabBar.setSelected(0);
                     cardLayout.show(content, "home");
                     homeCardLayout.show(homeContent, "editor");
-                    controlPanel.setPixelateButtonEnabled(true);
+                    controlPanel.setButtonsEnabled(true);
                     imagePreviewPanel.displayImage(creator.getTemplate().getDisplayImage());
                 }
-                case null, default -> {}
+                case null, default -> {
+                }
             }
         });
     }

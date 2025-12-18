@@ -1,5 +1,6 @@
 package artcreator.creator.impl;
 
+import artcreator.domain.ArtworkConfig;
 import artcreator.domain.Template;
 import artcreator.domain.port.Domain;
 import artcreator.statemachine.port.State.S;
@@ -17,6 +18,7 @@ public class CreatorImpl {
     private final StateMachine stateMachine;
     private final Template template;
     private final PixelationEngine engine = new PixelationEngine();
+    private final PDFGenerator pdfGenerator = new PDFGenerator();
 
     public CreatorImpl(StateMachine stateMachine, Domain domain) {
         this.stateMachine = stateMachine;
@@ -48,6 +50,39 @@ public class CreatorImpl {
         template.setLastPixelSize(pixelSize);
         stateMachine.setState(S.PIXELATED);
         LOG.log(Level.INFO, "Pixelated with size: " + pixelSize);
+    }
+
+    public void applyConfig(ArtworkConfig config) {
+        if (!template.hasOriginalImage()) {
+            LOG.log(Level.WARNING, "No image loaded");
+            return;
+        }
+        // Copy config values to template's config
+        var templateConfig = template.getConfig();
+        templateConfig.setGridWidth(config.getGridWidth());
+        templateConfig.setGridHeight(config.getGridHeight());
+        templateConfig.setColorCount(config.getColorCount());
+        templateConfig.setMode3D(config.isMode3D());
+        templateConfig.setOutputSize(config.getOutputSize());
+
+        var pixelated = engine.pixelate(template.getOriginalImage(), templateConfig);
+        template.setPixelatedImage(pixelated);
+        stateMachine.setState(S.PIXELATED);
+        LOG.log(Level.INFO, "Applied config: " + config.getGridWidth() + "x" + config.getGridHeight() +
+                ", colors=" + config.getColorCount() + ", 3D=" + config.isMode3D());
+    }
+
+    public void generatePDF(File outputFile) {
+        if (template.getDisplayImage() == null) {
+            LOG.log(Level.WARNING, "No image to export");
+            return;
+        }
+        try {
+            pdfGenerator.generate(template, outputFile);
+            LOG.log(Level.INFO, "PDF generated: " + outputFile.getName());
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error generating PDF", e);
+        }
     }
 
     public void reset() {

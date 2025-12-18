@@ -1,6 +1,7 @@
 package artcreator.gui;
 
 import artcreator.creator.port.Creator;
+import artcreator.domain.ArtworkConfig;
 import artcreator.statemachine.port.Observer;
 import artcreator.statemachine.port.State;
 import artcreator.statemachine.port.Subject;
@@ -35,9 +36,24 @@ public class Controller implements Observer {
         CompletableFuture.runAsync(() -> model.loadImage(new File(dir, file)));
     }
 
-    public void onPixelate() {
-        var pixelSize = view.getControlPanel().getPixelSize();
-        CompletableFuture.runAsync(() -> model.pixelate(pixelSize));
+    public void onApply() {
+        var config = new ArtworkConfig();
+        view.getControlPanel().applyToConfig(config);
+        CompletableFuture.runAsync(() -> model.applyConfig(config));
+    }
+
+    public void onGeneratePDF() {
+        var dialog = new FileDialog(view, "Save PDF", FileDialog.SAVE);
+        dialog.setFile("artwork.pdf");
+        dialog.setFilenameFilter((_, name) -> name.toLowerCase().endsWith(".pdf"));
+        dialog.setVisible(true);
+
+        var dir = dialog.getDirectory();
+        var file = dialog.getFile();
+        if (dir == null || file == null) return;
+
+        var outputFile = new File(dir, file.endsWith(".pdf") ? file : file + ".pdf");
+        CompletableFuture.runAsync(() -> model.generatePDF(outputFile));
     }
 
     @Override

@@ -6,12 +6,15 @@ public class Template {
     private BufferedImage originalImage;
     private BufferedImage pixelatedImage;
     private int lastPixelSize;
+    private final ArtworkConfig config = new ArtworkConfig();
 
     public Template() {
         this.originalImage = null;
         this.pixelatedImage = null;
         this.lastPixelSize = 10;
     }
+
+    public ArtworkConfig getConfig() { return config; }
 
     public BufferedImage getOriginalImage() {
         return originalImage;

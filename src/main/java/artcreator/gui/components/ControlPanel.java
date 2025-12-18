@@ -1,57 +1,86 @@
 package artcreator.gui.components;
 
+import artcreator.domain.ArtworkConfig;
+import artcreator.domain.OutputSize;
 import artcreator.gui.UIConfig;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Hashtable;
 
 public class ControlPanel {
     private final JPanel panel;
-    private final JSlider pixelSizeSlider;
-    private final JButton pixelateButton;
+    private final JSpinner gridWidthSpinner;
+    private final JSpinner gridHeightSpinner;
+    private final JComboBox<Integer> colorCountCombo;
+    private final JCheckBox mode3DCheck;
+    private final JComboBox<OutputSize> outputSizeCombo;
+    private final JButton applyButton;
+    private final JButton pdfButton;
 
-    public ControlPanel(Runnable onLoad, Runnable onPixelate) {
-        panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
-        panel.setBorder(UIConfig.padding(5, 10));
+    public ControlPanel(Runnable onLoad, Runnable onApply, Runnable onGeneratePDF) {
+        panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(UIConfig.padding(10, 15));
 
-        pixelSizeSlider = createSlider();
+        // Row 1: Load + Grid Resolution
+        var row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
+        row1.add(UIConfig.button("Load Image", onLoad));
 
-        pixelateButton = UIConfig.handCursor(new JButton("Pixelate"));
-        pixelateButton.setFont(UIConfig.FONT_BOLD);
-        pixelateButton.setFocusPainted(false);
-        pixelateButton.setEnabled(false);
-        pixelateButton.addActionListener(_ -> onPixelate.run());
+        row1.add(new JLabel("Grid:"));
+        gridWidthSpinner = new JSpinner(new SpinnerNumberModel(50, 10, 200, 10));
+        gridHeightSpinner = new JSpinner(new SpinnerNumberModel(50, 10, 200, 10));
+        row1.add(gridWidthSpinner);
+        row1.add(new JLabel("x"));
+        row1.add(gridHeightSpinner);
 
-        panel.add(UIConfig.button("Load Image", onLoad));
-        panel.add(new JLabel("Pixel Size:"));
-        panel.add(pixelSizeSlider);
-        panel.add(pixelateButton);
+        // Row 2: Colors, 3D, Output Size, Buttons
+        var row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
+
+        row2.add(new JLabel("Colors:"));
+        colorCountCombo = new JComboBox<>(new Integer[]{8, 16, 32});
+        colorCountCombo.setSelectedItem(16);
+        row2.add(colorCountCombo);
+
+        mode3DCheck = new JCheckBox("3D Effect");
+        row2.add(mode3DCheck);
+
+        row2.add(new JLabel("Output:"));
+        outputSizeCombo = new JComboBox<>(OutputSize.values());
+        row2.add(outputSizeCombo);
+
+        applyButton = UIConfig.handCursor(new JButton("Apply"));
+        applyButton.setFont(UIConfig.FONT_BOLD);
+        applyButton.setEnabled(false);
+        applyButton.addActionListener(_ -> onApply.run());
+        row2.add(applyButton);
+
+        pdfButton = UIConfig.handCursor(new JButton("Generate PDF"));
+        pdfButton.setEnabled(false);
+        pdfButton.addActionListener(_ -> onGeneratePDF.run());
+        row2.add(pdfButton);
+
+        panel.add(row1);
+        panel.add(row2);
     }
 
-    private JSlider createSlider() {
-        var slider = new JSlider(JSlider.HORIZONTAL, 2, 50, 10);
-        slider.setPreferredSize(new Dimension(300, 70));
-        slider.setMajorTickSpacing(10);
-        slider.setMinorTickSpacing(2);
-        slider.setPaintTicks(true);
-        slider.setPaintLabels(true);
+    public JPanel getPanel() { return panel; }
 
-        var labels = new Hashtable<Integer, JLabel>();
-        for (var i : new int[]{2, 10, 20, 30, 40, 50}) labels.put(i, new JLabel(String.valueOf(i)));
-        slider.setLabelTable(labels);
-        return slider;
+    public void setButtonsEnabled(boolean enabled) {
+        applyButton.setEnabled(enabled);
+        pdfButton.setEnabled(enabled);
     }
 
-    public JPanel getPanel() {
-        return panel;
+    public void applyToConfig(ArtworkConfig config) {
+        config.setGridWidth((Integer) gridWidthSpinner.getValue());
+        config.setGridHeight((Integer) gridHeightSpinner.getValue());
+        config.setColorCount((Integer) colorCountCombo.getSelectedItem());
+        config.setMode3D(mode3DCheck.isSelected());
+        config.setOutputSize((OutputSize) outputSizeCombo.getSelectedItem());
     }
 
-    public int getPixelSize() {
-        return pixelSizeSlider.getValue();
-    }
-
-    public void setPixelateButtonEnabled(boolean enabled) {
-        pixelateButton.setEnabled(enabled);
-    }
+    public int getGridWidth() { return (Integer) gridWidthSpinner.getValue(); }
+    public int getGridHeight() { return (Integer) gridHeightSpinner.getValue(); }
+    public int getColorCount() { return (Integer) colorCountCombo.getSelectedItem(); }
+    public boolean isMode3D() { return mode3DCheck.isSelected(); }
+    public OutputSize getOutputSize() { return (OutputSize) outputSizeCombo.getSelectedItem(); }
 }
