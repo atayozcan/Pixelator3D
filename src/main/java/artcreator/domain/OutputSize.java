@@ -7,8 +7,7 @@ public enum OutputSize {
     A1(594, 841),
     A0(841, 1189);
 
-    private final int widthMM;
-    private final int heightMM;
+    private final int widthMM, heightMM;
 
     OutputSize(int widthMM, int heightMM) {
         this.widthMM = widthMM;
@@ -19,9 +18,12 @@ public enum OutputSize {
     public int getHeightMM() { return heightMM; }
 
     public int getPagesRequired() {
-        if (this == A4) return 1;
-        var area = widthMM * heightMM;
-        var a4Area = A4.widthMM * A4.heightMM;
-        return (int) Math.ceil((double) area / a4Area);
+        return switch (this) {
+            case A4 -> 1;
+            case A3 -> 2;
+            case A2 -> 4;
+            case A1 -> 8;
+            case A0 -> 16;
+        };
     }
 }

@@ -24,7 +24,8 @@ public final class UIConfig {
     public static final Cursor HAND = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
     public static final int RADIUS = 8;
 
-    private UIConfig() {}
+    private UIConfig() {
+    }
 
     public static void init() {
         var defaults = UIManager.getDefaults();
@@ -59,9 +60,7 @@ public final class UIConfig {
 
     public static <T extends JComponent> T centered(T component) {
         component.setAlignmentX(Component.CENTER_ALIGNMENT);
-        if (component instanceof JLabel label) {
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-        }
+        if (component instanceof JLabel label) label.setHorizontalAlignment(SwingConstants.CENTER);
         return component;
     }
 
@@ -83,9 +82,8 @@ public final class UIConfig {
             g.setColor(fill);
             g.fillRoundRect(x, y, w, h, r, r);
         }
-        if (border != null) {
-            g.setColor(border);
-            g.drawRoundRect(x, y, w, h, r, r);
-        }
+        if (border == null) return;
+        g.setColor(border);
+        g.drawRoundRect(x, y, w, h, r, r);
     }
 }

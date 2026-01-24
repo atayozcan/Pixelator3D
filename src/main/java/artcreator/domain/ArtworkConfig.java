@@ -1,19 +1,19 @@
 package artcreator.domain;
 
 public class ArtworkConfig {
+    private static final int MIN_PIXEL_SIZE = 2, MAX_PIXEL_SIZE = 50;
+
     private int pixelSize = 10;
     private int colorCount = 16;
-    private boolean mode3D = false;
+    private boolean mode3D;
     private OutputSize outputSize = OutputSize.A4;
 
     public int getPixelSize() { return pixelSize; }
-    public void setPixelSize(int pixelSize) { this.pixelSize = Math.max(2, Math.min(50, pixelSize)); }
+    public void setPixelSize(int pixelSize) { this.pixelSize = Math.clamp(pixelSize, MIN_PIXEL_SIZE, MAX_PIXEL_SIZE); }
 
     public int getColorCount() { return colorCount; }
     public void setColorCount(int colorCount) {
-        if (colorCount == 8 || colorCount == 16 || colorCount == 32) {
-            this.colorCount = colorCount;
-        }
+        if (colorCount == 8 || colorCount == 16 || colorCount == 32) this.colorCount = colorCount;
     }
 
     public boolean isMode3D() { return mode3D; }

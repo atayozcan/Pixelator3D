@@ -9,6 +9,8 @@ public class Main {
     static void main() {
         System.setProperty("sun.java2d.uiScale", "2");
         System.setProperty("GDK_BACKEND", "wayland");
+        System.setProperty("AWT_TOOLKIT", "WLToolkit");
+        System.setProperty("_JAVA_AWT_WM_NONREPARENTING", "1");
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
         System.setProperty("jdk.gtk.version", "4");

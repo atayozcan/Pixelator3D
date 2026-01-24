@@ -43,7 +43,7 @@ public class CreatorFacade implements CreatorFactory, Creator {
 
     @Override
     public synchronized void generatePDF(File outputFile) {
-        if (!this.stateMachine.getState().isSubStateOf(S.IMAGE_LOADED)) return;
+        if (this.stateMachine.getState() != S.PIXELATED) return;
         this.creator.generatePDF(outputFile);
     }
 

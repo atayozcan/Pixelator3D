@@ -9,16 +9,11 @@ import artcreator.gui.components.TabBar;
 import artcreator.statemachine.StateMachineFactory;
 import artcreator.statemachine.port.Observer;
 import artcreator.statemachine.port.State;
-import artcreator.statemachine.port.Subject;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.Serial;
 
 public class CreatorFrame extends JFrame implements Observer {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
     private final transient Creator creator = CreatorFactory.FACTORY.creator();
     private final ControlPanel controlPanel;
     private final ImagePreviewPanel imagePreviewPanel;
@@ -35,7 +30,7 @@ public class CreatorFrame extends JFrame implements Observer {
         setLocationRelativeTo(null);
         getContentPane().setBackground(UIConfig.BG_PRIMARY);
 
-        Subject subject = StateMachineFactory.FACTORY.subject();
+        var subject = StateMachineFactory.FACTORY.subject();
         subject.attach(this);
 
         var controller = new Controller(this, subject, creator);

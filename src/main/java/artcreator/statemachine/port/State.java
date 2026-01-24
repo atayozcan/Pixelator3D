@@ -1,7 +1,5 @@
 package artcreator.statemachine.port;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public interface State {
@@ -16,14 +14,13 @@ public interface State {
         private final List<State> subStates;
 
         S(State... subS) {
-            this.subStates = new ArrayList<>(Arrays.asList(subS));
+            this.subStates = List.of(subS);
         }
 
         @Override
         public boolean isSuperStateOf(State s) {
-            boolean result = (s == null) || (this == s); // self-contained
-            for (State state : this.subStates) // or
-                result |= state.isSuperStateOf(s); // contained in a substate!
+            var result = (s == null) || (this == s); // self-contained
+            for (State state : this.subStates) result |= state.isSuperStateOf(s);// or contained in a substate
             return result;
         }
 

@@ -25,10 +25,9 @@ public final class TabBar extends JComponent {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 var idx = getTabAt(e.getX());
-                if (idx >= 0 && idx < tabs.size()) {
-                    setSelected(idx);
-                }
+                if (idx >= 0 && idx < tabs.size()) setSelected(idx);
             }
+
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 hoveredIndex = -1;
@@ -40,10 +39,9 @@ public final class TabBar extends JComponent {
             @Override
             public void mouseMoved(java.awt.event.MouseEvent e) {
                 var idx = getTabAt(e.getX());
-                if (idx != hoveredIndex) {
-                    hoveredIndex = idx;
-                    repaint();
-                }
+                if (idx == hoveredIndex) return;
+                hoveredIndex = idx;
+                repaint();
             }
         });
     }
@@ -54,11 +52,10 @@ public final class TabBar extends JComponent {
     }
 
     public void setSelected(int index) {
-        if (index >= 0 && index < tabs.size()) {
-            selectedIndex = index;
-            cardLayout.show(content, tabs.get(index).cardName);
-            repaint();
-        }
+        if (index < 0 || index >= tabs.size()) return;
+        selectedIndex = index;
+        cardLayout.show(content, tabs.get(index).cardName);
+        repaint();
     }
 
     private int getTabAt(int x) {
@@ -120,5 +117,6 @@ public final class TabBar extends JComponent {
         return panel;
     }
 
-    private record Tab(String name, String cardName) {}
+    private record Tab(String name, String cardName) {
+    }
 }
